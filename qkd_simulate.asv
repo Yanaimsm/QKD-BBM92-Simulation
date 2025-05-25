@@ -1,0 +1,34 @@
+% qkd_simulate.m – Sweep background noise and observe QBER impact
+
+% Define sweep values
+bg_vals = linspace(0, 0.1, 20);   % Background noise from 0 to 10%
+qber_vals = zeros(size(bg_vals)); % Preallocate for QBER results
+
+% Loop over different bg_noise values
+for i = 1:length(bg_vals)
+    % --- Step 1: Run Parameter File ---
+    run('qkd_params.m');           % Initialize all values
+    bg_noise = bg_vals(i);         % Override background noise
+    save('qkd_params.mat');        % Save updated parameter
+    
+    % --- Step 2: Run Coincidence and Raw Key ---
+    run('qkd_coincidence.m');      % Simulate coincidence and raw key
+    
+    % --- Step 3: Reconciliation + Get QBER ---
+    try
+        run('qkd_reconcile.m');        % Perform QBER & error correction
+        qber_vals(i) = qber;           % Store QBER from reconcile
+    catch
+        qber_vals(i) = NaN;            % Store NaN on error
+        fprintf('QBER failed at bg_noise = %.3f\n', bg_vals(i));
+    end
+    fprintf('trial for background noise = %.3f\n', bg_vals(i));
+end
+
+% Plot QBER vs. Background Noise
+figure;
+plot(bg_vals, qber_vals, '-o', 'LineWidth', 2);
+xlabel('Background Noise Probability');
+ylabel('QBER (%)');
+title('QBER vs. Background Noise');
+grid on;
