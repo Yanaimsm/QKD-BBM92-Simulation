@@ -24,7 +24,7 @@ total_keys = length(alice_raw_key);  % Update usable key length
 if qber > 11
     disp('Error: QBER exceeds threshold. Key distribution aborted.');
     disp(qber);
-    return;
+    % return;
 end
 
 % --- Cascade Error Correction Setup ---
@@ -108,3 +108,6 @@ end
 
 disp(['Final key length: ', num2str(s)]);
 disp('Final key generation successful with privacy amplification.');
+
+
+save('qkd_reconcile_results.mat', 'qber', 'alice_corrected_key', 's');
