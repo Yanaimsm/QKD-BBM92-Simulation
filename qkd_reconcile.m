@@ -24,14 +24,14 @@ total_keys = length(alice_raw_key);  % Update usable key length
 if qber > 11
     disp('Error: QBER exceeds threshold. Key distribution aborted.');
     disp(qber);
-    % return;
+    return;
 end
 
 % --- Cascade Error Correction Setup ---
 
 num_passes = 5;                          % Number of Cascade passes
-k1 = 0.73 / (qber / 100);                % Initial block size (in bits), from Brassard-Salvail
-block_sizes = ceil([k1, k1/2, k1/4, k1/8, k1/16]);  % Geometrically shrinking block sizes
+k1 = 0.73 / (qber/100);                % Initial block size (in bits), from Brassard-Salvail
+block_sizes = ceil([k1, k1*2, k1*4, k1*8, k1*16]);  % Geometrically shrinking block sizes
 alice_corrected_key = alice_raw_key;     % Initialize corrected key (copy)
 bob_corrected_key   = bob_raw_key;       % Initialize corrected key (copy)
 info_leakage = 0;                         % Tracks total number of leaked parity bits
@@ -91,6 +91,26 @@ s = floor(n - info_leakage - 2 * log2(1/epsilon));  % Length of final key after 
 if s <= 0
     error('Privacy amplification failed: estimated final key length is non-positive.');
 end
+% Step 2: Final Key Comparison
+alice_final_key = alice_corrected_key;
+bob_final_key = bob_corrected_key;
+
+% Ensure final key lengths are equal
+min_len = min(length(alice_final_key), length(bob_final_key));
+alice_final_key = alice_final_key(1:min_len);
+bob_final_key = bob_final_key(1:min_len);
+
+% Convert to column vectors
+alice_final_key_col = alice_final_key(:);
+bob_final_key_col = bob_final_key(:);
+index_col = (1:min_len)';
+
+% Calculate mismatches
+mismatch_col = alice_final_key_col ~= bob_final_key_col;
+
+% Final Key Accuracy
+final_corrected_matches = sum(~mismatch_col);  % Matches are where mismatch == 0
+final_key_accuracy = (final_corrected_matches / min_len) * 100;
 
 % Generate a random binary (s x n) matrix as universal hash
 P = randi([0,1], s, n);
@@ -108,6 +128,10 @@ end
 
 disp(['Final key length: ', num2str(s)]);
 disp('Final key generation successful with privacy amplification.');
-
+% Display accuracy in console
+disp('Final Key Accuracy After Error Correction and Privacy Amplification:');
+disp(final_key_accuracy);
+disp('Information leakage:');
+disp(info_leakage);
 
 save('qkd_reconcile_results.mat', 'qber', 'alice_corrected_key', 's');
